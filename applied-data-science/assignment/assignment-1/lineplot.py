@@ -13,10 +13,9 @@ def draw_lineplot(df, countries):
     """ 
         This method is used to create a line plot. Arguments:
         A dataframe with a column 'Period' (used for years) taken as x and 
-        other columns taken as y. List 'country' containing column to plot. 
+        other columns taken as y. List 'country' containing columns to plot. 
     """
     plt.figure()
-    #plt.rcParams["figure.autolayout"] = True
 
     for country in countries:
         plt.plot(df["Period"], df[country], label=country, linewidth=2.0)
@@ -27,16 +26,17 @@ def draw_lineplot(df, countries):
     # Add label
     plt.xlabel("Year")
     plt.ylabel("Number of People")
-    # Add title and other adjustments
+    
+    # Add title and other control arguments
     plt.title("Number of People with HIV during 2008 - 2022", color='red',
               fontsize=18)
-    plt.legend(loc="center right", fontsize='small')
-    plt.margins(x=0)
+    plt.legend(loc="upper left", fontsize='x-small')
 
-    # Remove white space from left and right
-    plt.xlim(min(df["Period"]))
+    # Remove white space from left and right and y axis
+    plt.xlim(min(df["Period"]), max(df["Period"]))
+    plt.ylim(ymin=0)
 
-    # Save as image
+    # Save as png image
     plt.savefig("line_plot.png")
 
     plt.show()

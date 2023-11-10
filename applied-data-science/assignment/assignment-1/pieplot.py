@@ -20,7 +20,8 @@ def draw_pieplot(df):
 
     # Add label and title
     plot.set_ylabel("Total People")
-    plt.title("Sum of people with HIV for past ~20 years(2000-2022)", fontsize=18)
+    plt.title("Sum of people with HIV for past ~20 years(2000-2022)",
+              fontsize=18, color="blue")
     plt.legend(loc="upper right")
 
     # Save as png image
@@ -36,13 +37,12 @@ data = pd.read_csv(
 
 # Create data frame
 df = pd.DataFrame(data)
-print(df)
 
 # Replace NAN values from number_of_people column with zeros
 df["Number_Of_People"] = df["Number_Of_People"].fillna(0)
 
 # Get total number of people for each country through out given years
 df_manipulate = df.groupby(["Country"]).sum(["Number_Of_People"])
-print(df_manipulate)
+
 # Call function
 draw_pieplot(df_manipulate)

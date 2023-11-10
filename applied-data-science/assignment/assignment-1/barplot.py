@@ -13,7 +13,7 @@ def draw_barplot(df_m):
     """ 
     This method is used to create a bar plot. Arguments:
     A dataframe with a column 'Period' (used for years) taken as x and 
-    other columns taken as y. List 'country' containing column to plot.
+    other columns taken as y.
     """
 
     fig, ax = plt.subplots()
@@ -26,7 +26,7 @@ def draw_barplot(df_m):
                  color="indigo", fontsize=15)
 
     # Save as png image
-    plt.savefig("bar_plot")
+    plt.savefig("bar_plot.png")
     plt.show()
 
     return
@@ -42,7 +42,7 @@ df = pd.DataFrame(data)
 # Remove column 'ParentLocation' which is not useful
 df = df.drop(columns=["ParentLocation", "IsLatestYear", "CountryCode"])
 
-# Rename column 'FactValueNumeric' to '' for easy understanding
+# Rename column 'FactValueNumeric' to 'ValueAccurate' for meaningful
 df = df.rename(columns={"FactValueNumeric": "ValueAccurate"})
 
 # Call function
