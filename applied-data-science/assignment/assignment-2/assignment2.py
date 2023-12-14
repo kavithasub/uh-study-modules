@@ -22,7 +22,7 @@ def read_data(datafile):
 
 def print_to_file(df_m):
     """
-    This method is common print used to print data after manipulated dataframe
+    This method is common print used to print given data to text file
     """
     x = np.random.randint(1, 100)
     filename = "dataframe" + str(x) + ".txt"
@@ -97,6 +97,7 @@ def prepare_stats(df, years, coun_header, coun_value):
     df_m = df_m.dropna()
     # Transpose dataframe
     df_transpose = df_m.transpose()
+    # Find correlation matrix
     correlation = df_transpose.corr()
 
     return df_m, df_transpose, correlation
@@ -195,7 +196,7 @@ print_to_file(df_heatmap)
 draw_heatmap(correlation, country, cmap)
 
 """
-Step4 : Summary of Statistcis data
+Step4 : Find summary of Statistcis data
 """
 stats_summary(df_manipulate)
 
@@ -203,13 +204,13 @@ stats_summary(df_manipulate)
 Step5 : Create another two heatmap for different countries
 """
 # Create heatmap for 'United States'
-country = 'Australia'
+country = 'United States'
 cmap = 'viridis'
 df_manipulate, df_heatmap, correlation = prepare_stats(
     dataframe, years, country_header, country)
 print_to_file(df_heatmap)
 draw_heatmap(correlation, country, cmap)
-# Create heatmap for 'Netherlands'
+# Create heatmap for 'Iceland'
 country = 'Iceland'
 cmap = 'magma'
 df_manipulate, df_heatmap, correlation = prepare_stats(
