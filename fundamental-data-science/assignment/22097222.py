@@ -4,16 +4,16 @@ Created on Tue Dec 26 14:03:41 2023
 
 @author: kthat
 """
-
-# coding project FDS
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 def find_mean(xdist, ydist):
+    """This method is to calculate mean salary value"""
     # calculate mean salary
     xmean = np.sum(xdist*ydist)
+    print(xmean)
     # plot mean salary
     plt.plot([xmean, xmean], [0.0, max(ydist)], label='Mean Annual Salary', c='red', linewidth=2)
     text = ''' W= {}'''.format(xmean.astype(int))
@@ -24,11 +24,13 @@ def find_mean(xdist, ydist):
 
 
 def find_x(edge, xdist, wdist, ydist, xmean):
+    """This method is to calculate X value"""
     # cumulative distribution
     cdst = np.cumsum(ydist)
     # find value X such that 0.05 of the distribution corresponds to values >X value
     indx = np.argmin(np.abs(cdst-(1.0-0.05)))
     xhigh = edge[indx]
+    print(xhigh)
     plt.bar(xdist[indx:], ydist[indx:], width=0.9*wdist[0:indx], color='orange')
     plt.plot([xhigh, xhigh], [0.0, max(ydist)], c='green', linestyle='dashed', label='X value')
     text = ''' 5% of people's salary above £{}'''.format(xhigh.astype(int))
@@ -38,7 +40,7 @@ def find_x(edge, xdist, wdist, ydist, xmean):
 
     return
 
-
+# Read data file
 data = pd.read_csv('data2-1.csv')
 
 # Create probability density function
@@ -46,8 +48,8 @@ data = pd.read_csv('data2-1.csv')
 hist, edge = np.histogram(data, bins=32, range=[0.0, 160000.0])
 
 # calculate bin centre locations and bin widths
-xdist = 0.5*(edge[1:]+edge[:-1])
-wdist = edge[1:]-edge[:-1]
+xdist = 0.5*(edge[1:]+edge[:-1]) # xdist is bin centre location
+wdist = edge[1:]-edge[:-1] # wdist is bin width
 
 # normalise the distribution
 ydist = hist/np.sum(hist)  # ydist is a discrete PDF
