@@ -1,2 +1,2 @@
 # uh-study-modules
-Working repository for study modules for university of Hertofordshire
+Working repository for MSc data science study modules for university of Hertfordshire
