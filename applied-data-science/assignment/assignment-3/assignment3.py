@@ -63,14 +63,14 @@ def prepare_data_for_cluster(df_m, year, indicators):
                                 indicators[1]: 'F.W.W.TOTAL',
                                 # fresh water withdrwal for industry
                                 indicators[2]: 'F.W.W.INDUS',
-                                # drinking water population
-                                indicators[3]: 'D.W.POPUL',
                                 # Agriculture GDP value added
-                                indicators[4]: 'AGRI.GDP',
+                                indicators[3]: 'AGRI.GDP',
                                 # renewable internal fresh water
-                                indicators[5]: 'R.INT.F.W'
+                                indicators[4]: 'R.INT.F.W'
                                 })
-    df_explore = df_m[['F.W.W.AGRI', 'F.W.W.TOTAL', 'F.W.W.INDUS', 'D.W.POPUL',
+    #                                # drinking water population
+                                   # indicators[3]: 'D.W.POPUL',
+    df_explore = df_m[['F.W.W.AGRI', 'F.W.W.TOTAL', 'F.W.W.INDUS',
                                   'AGRI.GDP', 'R.INT.F.W']].copy()
     return df_explore
 
@@ -108,10 +108,10 @@ year = '2020'
 indicators = ['Annual freshwater withdrawals, agriculture (% of total freshwater withdrawal)',
               'Annual freshwater withdrawals, total (billion cubic meters)',
               'Annual freshwater withdrawals, industry (% of total freshwater withdrawal)',
-              'People using at least basic drinking water services (% of population)',
               'Agriculture, forestry, and fishing, value added (% of GDP)',
               'Renewable internal freshwater resources, total (billion cubic meters)']
 
+#'People using at least basic drinking water services (% of population)',
 df_explore = prepare_data_for_cluster(df_m, year, indicators)
 
 # Checking correlations as highly correlated categories are not good for clustering
@@ -158,7 +158,9 @@ for i in range(2, 7):
 
 
 # Plot for 4 clusters
-ncluster = 2
+
+#plot_cluster()
+ncluster = 3
 
 x = df_clus[clus_col_1]
 y = df_clus[clus_col_2]
@@ -175,8 +177,6 @@ plt.figure(figsize=(8.0, 8.0))
 plt.scatter(x, y, c=labels, cmap="tab10")
 # colour map Accent selected to increase contrast between colours
 
-# rescale and show cluster centres
-#scen = ct.backscale(cen, df_clus_min, df_clus_max)
 # show cluster centres
 xc = cen[:, 0]
 yc = cen[:, 1]
