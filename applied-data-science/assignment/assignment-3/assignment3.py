@@ -15,17 +15,6 @@ import scipy.optimize as opt
 import errors as error
 
 
-def print_to_file(df_m):
-    """
-    This method is common print used to print given data to text file
-    """
-    x = np.random.randint(1, 100)
-    filename = "dataframe" + str(x) + ".txt"
-    textfile = open(filename, "w")
-    df_m.to_string(textfile)
-    textfile.close()
-
-
 def read_data(datafile):
     """
     Read data from excel file and return dataframe
@@ -75,21 +64,35 @@ def prepare_data_for_cluster(df_2, year, indicators):
 
     # Rename appropriate indicators to explore in scatter matrix or draw heatmap
     df_2 = df_2.rename(columns={indicators[0]: 'F.W.W.AGRI',  # fresh water withdrwal for agriculture
-                                # total fresh water withdrwal
-                                indicators[1]: 'F.W.W.TOTAL',
                                 # fresh water withdrwal for industry
-                                indicators[2]: 'F.W.W.INDUS',
+                                indicators[1]: 'F.W.W.INDUS',
                                 # Agriculture GDP value added
-                                indicators[3]: 'AGRI.GDP',
-                                # renewable internal fresh water
-                                indicators[4]: 'R.INT.F.W'
+                                indicators[2]: 'AGRI.GDP',
+                                # renewable internal fresh water total
+                                indicators[3]: 'R.INT.F.W.T',
+                                # renewable internal fresh water per capita
+                                indicators[4]: 'R.INT.F.W.C'
                                 })
-    #                                # drinking water population
-    # indicators[3]: 'D.W.POPUL',
-    df_explore = df_2[['F.W.W.AGRI', 'F.W.W.TOTAL', 'F.W.W.INDUS',
-                       'AGRI.GDP', 'R.INT.F.W']].copy()
+
+    df_explore = df_2[['F.W.W.AGRI', 'F.W.W.INDUS',
+                       'AGRI.GDP', 'R.INT.F.W.T', 'R.INT.F.W.C']].copy()
 
     return df_explore, df_country
+
+
+def plot_heatmap_scatter(df_explore, corr):
+    # Get heatmap
+    plt.figure(figsize=[8, 8])
+    plt.imshow(corr)
+    plt.colorbar()
+    annotations = df_explore.columns[:]  # extract relevant headers
+    plt.xticks(ticks=[0, 1, 2, 3, 4], labels=annotations)
+    plt.yticks(ticks=[0, 1, 2, 3, 4], labels=annotations)
+
+    # Explore data set as scatter matrix
+    pd.plotting.scatter_matrix(df_explore, figsize=(10, 10), s=10)
+    plt.show()
+    return
 
 
 def find_sillhoutte_score(df_clus):
@@ -107,26 +110,19 @@ def find_sillhoutte_score(df_clus):
     return
 
 
-def create_cluster(x, y, labels):  # , df_clus , predict):
-    plt.figure(figsize=(8.0, 8.0))
-    #fig, ax = plt.subplots(figsize=(8.0, 8.0), dpi=140)
+def create_cluster(x, y, labels, cen, title):
+    plt.figure(figsize=(6.0, 6.0), dpi=150)
     # scatter plot with colours selected using the cluster numbers
-    # axs[0].scatter(p1_norm[y_predict1 == 0, 0], p1_norm[y_predict1 == 0, 1], s=50,c='lightcoral', label='cluster 0')
-    #ax.scatter(df_clus['Cluster' == 0, 0], df_clus['Cluster' == 0, 1], c='blue', cmap="tab10", label='cluster 0')
-    #ax.scatter(df_clus['Cluster' == 1, 0], df_clus['Cluster' == 1, 1], c='blue', cmap="tab10", label='cluster 1')
-    #ax.scatter(df_clus['Cluster' == 2, 0], df_clus['Cluster' == 2, 1], c='blue', cmap="tab10", label='cluster 2')
     plt.scatter(x, y, c=labels, cmap="tab10")
-    # colour map Accent selected to increase contrast between colours
-
     # show cluster centres
     xc = cen[:, 0]
     yc = cen[:, 1]
-    plt.scatter(xc, yc, c="k", marker="d", s=50)
-    # c = colour, s = size
+    plt.scatter(xc, yc, c="k", marker="d", s=60)
 
-    plt.xlabel("Fresh water withdraw Industry")
-    plt.ylabel("Agri GDP ")
-    plt.title("clusters")
+    plt.xlabel("Fresh water withdrawal - Industry")
+    plt.ylabel("Renewable freshwater resources")
+    plt.title(title,
+              color="red", fontsize=12)
     plt.show()
 
     return
@@ -144,6 +140,7 @@ def view_cluster_countries(df_country, n_clusters):
 
 
 def prepare_data_for_fit(df_fit_, country, indicator):
+    # , '2021', '2022'])
     df_fit_ = df_fit_.drop(columns=['Country Code', 'Series Code'])
 
     cols = df_fit_.columns[2:]  # exclude first two columns
@@ -151,29 +148,29 @@ def prepare_data_for_fit(df_fit_, country, indicator):
     for i, r in enumerate(cols):
         df_fit_[cols[i]].replace({'..': '0'}, inplace=True)
         i = i+1
-        
+
+    df_fit_ = df_fit_.dropna()
     # Make values to float64 type
     df_fit_[cols] = df_fit_[cols].apply(pd.to_numeric)
 
     # Select required indicator and by country
     df_fit_ = df_fit_[df_fit_['Series Name'] == indicator]
     df_fit_ = df_fit_[df_fit['Country Name'] == country]
-    
+
     df_fit_ = df_fit_.reset_index(drop=True)
     df_fit_ = df_fit_.iloc[:, 2:]
     df_fit_ = df_fit_.transpose()
-    df_fit_.columns = ['AGRI_GDP']
-    df_fit_ = df_fit_.reset_index().rename(columns={'index':'Year'})
-    
-    return df_fit_
+    df_fit_.columns = ['Growth']
+    df_fit_ = df_fit_.reset_index().rename(columns={'index': 'Year'})
 
+    return df_fit_
 
 
 def logistics(t, a, k, t0):
     """ Computes logistics function with scale and incr as free parameters
-    """    
+    """
     f = a / (1.0 + np.exp(-k * (t - t0)))
-    
+
     return f
 
 
@@ -182,53 +179,58 @@ def exponential_growth(t, scale, growth):
     return f
 
 
-def plot_exponential_growth(df_fit_country, country):
-    popt, pcorr = opt.curve_fit(exponential_growth, df_fit_country["Year"], df_fit_country["AGRI_GDP"],
+def plot_exponential_growth(df_fit_country, country, title):
+    popt, pcorr = opt.curve_fit(exponential_growth, df_fit_country["Year"], df_fit_country["Growth"],
                                 p0=[4e8, 0.03])
     print("Fit parameter with exponential function", popt)
-    
-    df_fit_country["pop_exp"] = exponential_growth(df_fit_country["Year"], *popt)
+
+    df_fit_country["growth_exp"] = exponential_growth(
+        df_fit_country["Year"], *popt)
     plt.figure()
-    plt.plot(df_fit_country["Year"], df_fit_country["AGRI_GDP"], label="data")
-    plt.plot(df_fit_country["Year"], df_fit_country["pop_exp"], label="fit")
+    plt.plot(df_fit_country["Year"], df_fit_country["Growth"],
+             label="Freshwater per capita")
+    plt.plot(df_fit_country["Year"], df_fit_country["growth_exp"], label="fit")
 
     plt.legend()
-    plt.title(f"Fit exponential growth for {country}")
+    plt.title(f"{title} {country}", color="red", fontsize=12)
+    plt.xlabel("Year")
+    plt.ylabel("Renewable freshwater(cubic meter)")
     plt.show()
 
-    print("Agriculture Value added as % of GDP")
     print("2030:", exponential_growth(2030, *popt) / 1.0e6, "Mill.")
     print("2040:", exponential_growth(2040, *popt) / 1.0e6, "Mill.")
     print("2050:", exponential_growth(2050, *popt) / 1.0e6, "Mill.")
-    
+
     return
 
 
-def plot_logistic(df_fit_country, country):
-    popt, pcovar = opt.curve_fit(logistics, df_fit_country["Year"], df_fit_country["AGRI_GDP"], 
-                                p0=(16e8, 0.04, 1990.0))
+def plot_logistic(df_fit_country, country, title):
+    popt, pcovar = opt.curve_fit(logistics, df_fit_country["Year"], df_fit_country["Growth"],
+                                 p0=(4e8, 0.01, 1985.0))  # 3e12, 0.1, 1990  4e8, 0.03, 1980.0
     print("Fit parameter with logistic function", popt)
 
     # call function to calculate upper and lower limits with extrapolation
     # create extended year range
-    years = np.linspace(1980, 2040)
+    years = np.linspace(1970, 2040)
     pop_logistics = logistics(years, *popt)
 
     sigma = error.error_prop(years, logistics, popt, pcovar)
     low = pop_logistics - sigma
     up = pop_logistics + sigma
 
-
     plt.figure()
-    plt.title(f"Agriculture Value added GDP Forcast for {country}")
-    plt.plot(df_fit_country["Year"], df_fit_country["AGRI_GDP"], label="data")
-    plt.plot(years, pop_logistics, label="fit")
+    plt.title(f"{title} {country}", color="red", fontsize=12)
+    plt.xlabel("Year")
+    plt.ylabel("Renewable freshwater(cubic meter)")
+    plt.plot(df_fit_country["Year"],
+             df_fit_country["Growth"], label="Freshwater per capita")
+    plt.plot(years, pop_logistics, label="forcast")
     # plot error ranges with transparency
     plt.fill_between(years, low, up, alpha=0.5, color="y")
 
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper right")
     plt.show()
-    
+
     return
 
 
@@ -242,46 +244,37 @@ dataframe = read_data("Water_withdrawal_agriculture_limited_indicators.xlsx")
 df_m = dataframe.copy()
 df_m, df_m_transpose = manipulate_data(df_m)
 
-# df_m.to_excel("df_m.xlsx")
-# df_m_transpose.to_excel("df_m_trans.xlsx")
 
 '''
 Step 2 : Prepare data for cluster
 --------------------------------------
 '''
-
 year = '2020'
 indicators = ['Annual freshwater withdrawals, agriculture (% of total freshwater withdrawal)',
-              'Annual freshwater withdrawals, total (billion cubic meters)',
               'Annual freshwater withdrawals, industry (% of total freshwater withdrawal)',
               'Agriculture, forestry, and fishing, value added (% of GDP)',
-              'Renewable internal freshwater resources, total (billion cubic meters)']
+              'Renewable internal freshwater resources, total (billion cubic meters)',
+              'Renewable internal freshwater resources per capita (cubic meters)']
 
 # Copy manipulated data df_m to explore, so df_m will be reuse
 df_explore = df_m.copy()
 
 df_explore, df_country = prepare_data_for_cluster(df_explore, year, indicators)
-# df_country.to_excel('df_country.xlsx')
+print(df_explore.head())
 # Checking correlations as highly correlated categories are not good for clustering
 corr = df_explore.corr(numeric_only=True)
 
-# Get heatmap
-#plt.figure(figsize=[8, 8])
-# plt.imshow(corr)
-# plt.colorbar()
-
-# Explore data set as scatter matrix
-pd.plotting.scatter_matrix(df_explore, figsize=(10, 10), s=10)
-plt.show()
+# Plot heatmap and scatter-matrix
+plot_heatmap_scatter(df_explore, corr)
 
 # By looking at scatter matrix selected two indicators for further proccesing
-# F.W.W.AGRI => Annual freshwater withdrawals, agriculture
-# AGRI.GDP => Agriculture, forestry, and fishing GDP
+# F.W.W.AGRI => Annual freshwater withdrawals, industry
+# R.INT.F.W.T => Renewable internal freshwater resources, total (billion cubic meters)
 # Exract two indicators for climate change fitting
 clus_col_1 = 'F.W.W.INDUS'
-clus_col_2 = 'AGRI.GDP'
+clus_col_2 = 'R.INT.F.W.T'
 df_clus = df_explore[[clus_col_1, clus_col_2]].copy()
-#df_clus = df_clus.astype(float)
+
 
 '''
 Step 3 : Clustering - Normalise data, find number of clusters and plot
@@ -295,10 +288,11 @@ print(df_clus.describe())
 find_sillhoutte_score(df_clus)
 
 # Plot for clusters
-# ncluster selected based on silouette score
+# ncluster selected based on the silhouette. score for  3 is  0.7207
 ncluster = 3
 x = df_clus[clus_col_1]
 y = df_clus[clus_col_2]
+title = 'Fresh water withdrawal vs total renewable resources in 2020'
 
 # set up kmeans and fit
 kmeans = cluster.KMeans(n_clusters=ncluster, n_init=20)
@@ -308,9 +302,10 @@ kmeans.fit(df_clus)
 labels = kmeans.labels_
 # Get estimated cluster centers
 cen = kmeans.cluster_centers_
+#scen = ct.backscale(cen, df_clus_min, df_clus_max)
 
 # Call cluster method to plot
-create_cluster(x, y, labels)
+create_cluster(x, y, labels, cen, title)
 
 # Exract one country from each cluster
 df_country['Cluster No'] = labels
@@ -319,40 +314,38 @@ view_cluster_countries(df_country, ncluster)
 
 
 '''
-Step 4 : Fitting model
---------------------------
+Step 4 : Data Fitting and Forcasting
+----------------------------------------
 '''
 # According to cluster clasification, selected below countries
-# Cluster 0 => Ghana; Cluster 1 => France; Cluster 2 => Cyprus
+# Cluster 0 => Ghana; Cluster 1 => Singapore; Cluster 2 => China
 # Prepare data for fitting
 
-countries = ['Ghana', 'France', 'Cyprus']
-indicator = 'Agriculture, forestry, and fishing, value added (% of GDP)'
+countries = ['Ghana', 'Singapore', 'China', 'Cyprus', 'Pakistan',
+             'China', 'Canada', 'Lebanon', 'Singapore']
+indicator = 'Renewable internal freshwater resources per capita (cubic meters)'
 
 # Read data file and create dataframe
-gdp_data = read_data('Agricuture_GDP_countries.xlsx')
+gdp_data = read_data('Renewable_Fresh_Water_per_capita_1.xlsx')
 df_fit = gdp_data.copy()
 
 # Prepare data for fitting
-df_fit_Ghana = prepare_data_for_fit(df_fit, countries[0], indicator)
-df_fit_France = prepare_data_for_fit(df_fit, countries[1], indicator)
-df_fit_Cyprus = prepare_data_for_fit(df_fit, countries[2], indicator)
+df_fit_country_1 = prepare_data_for_fit(df_fit, countries[0], indicator)
+df_fit_country_2 = prepare_data_for_fit(df_fit, countries[1], indicator)
+df_fit_country_3 = prepare_data_for_fit(df_fit, countries[2], indicator)
 
 
 # fit exponential growth
 # Plot data to exponential growth
-#plot_exponential_growth(df_fit_Ghana, countries[0])
-#plot_exponential_growth(df_fit_France, countries[1])
-#plot_exponential_growth(df_fit_Cyprus, countries[2])
+title = 'Renewable Freshwater Per Capita Growth '
+plot_exponential_growth(df_fit_country_1, countries[0], title)
+plot_exponential_growth(df_fit_country_2, countries[1], title)
+plot_exponential_growth(df_fit_country_3, countries[2], title)
 
 
 # fit logistic
 # Plot data to logistic function
-#plot_logistic(df_fit_Ghana, countries[0])
-plot_logistic(df_fit_France, countries[1])
-#plot_logistic(df_fit_Cyprus, countries[2])
-
-
-'''
-End of file
-'''
+title = 'Renewable Freshwater Per Capita Forcast for'
+plot_logistic(df_fit_country_1, countries[0], title)
+plot_logistic(df_fit_country_2, countries[6], title)
+plot_logistic(df_fit_country_3, countries[2], title)
